@@ -44,7 +44,8 @@ class SplitCrankNicolson:
             raise ValueError("field_free_blocks must have shape (n_l, n_r, n_r).")
         if not np.all(np.isfinite(blocks)):
             raise ValueError("field_free_blocks must contain finite values.")
-        self.field_free_blocks = np.asarray(blocks, dtype=float)
+        dtype = np.complex128 if np.iscomplexobj(blocks) else float
+        self.field_free_blocks = np.asarray(blocks, dtype=dtype)
         self.n_l, self.n_r, _ = self.field_free_blocks.shape
         self.time_step = float(time_step)
         self.c = self.time_step / 2
