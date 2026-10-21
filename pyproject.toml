@@ -43,3 +43,6 @@ include-package-data = true
 [tool.setuptools.packages.find]
 include = ["born_oppenheimer_dynamics*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"born_oppenheimer_dynamics.vibrational_rotor" = ["data/*"]
