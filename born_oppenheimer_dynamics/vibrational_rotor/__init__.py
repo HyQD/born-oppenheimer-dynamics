@@ -1,0 +1,1 @@
+"""Vibrational-rotor dynamics."""
