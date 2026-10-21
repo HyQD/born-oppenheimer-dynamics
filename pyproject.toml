@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "born-oppenheimer-dynamics"
+version = "0.1.0"
+description = "Born-Oppenheimer dynamics tools"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = { file = "LICENSE" }
+authors = [{ name = "born-oppenheimer-dynamics contributors" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "HyQD-electromagnetic-fields",
+    "HyQD-grid-lib>=1.1.0",
+    "HyQD-integrator-lib>=0.2.0",
+    "HyQD-matter-field-params",
+    "numpy>=2.5.2,<2.6",
+    "scipy>=1.18.0,<1.19",
+    "opt-einsum",
+    "numba>=0.67.0,<0.68",
+    "sympy",
+    "packaging",
+    "tqdm",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["born_oppenheimer_dynamics*"]
+exclude = ["tests*"]
