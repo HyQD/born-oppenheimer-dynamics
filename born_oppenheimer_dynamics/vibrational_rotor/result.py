@@ -10,7 +10,12 @@ import numpy as np
 
 @dataclass(frozen=True)
 class VibrationalRotorResult:
-    """Sampled observables and the final rovibrational wavefunction."""
+    """Sampled observables, radial densities, and the final wavefunction.
+
+    ``radial_probability[i]`` is the radial probability density at
+    ``times[i]`` and is normalized with the FEM-DVR quadrature weights:
+    ``radial_probability[i] @ radial_weights == norms[i]``.
+    """
 
     times: np.ndarray
     electric_field: np.ndarray
@@ -19,6 +24,7 @@ class VibrationalRotorResult:
     expectation_cos_theta: np.ndarray
     expectation_cos_theta_squared: np.ndarray
     expectation_z: np.ndarray
+    radial_probability: np.ndarray
     solver_iterations: np.ndarray
     residual_norms: np.ndarray
     solver_methods: np.ndarray
@@ -60,6 +66,7 @@ class VibrationalRotorResult:
             expectation_cos_theta=self.expectation_cos_theta,
             expectation_cos_theta_squared=self.expectation_cos_theta_squared,
             expectation_z=self.expectation_z,
+            radial_probability=self.radial_probability,
             solver_iterations=self.solver_iterations,
             residual_norms=self.residual_norms,
             solver_methods=self.solver_methods,

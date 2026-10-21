@@ -14,7 +14,7 @@ from electromagnetic_fields.dipole_fields import SineSquareLaser
 
 from born_oppenheimer_dynamics import (
     DiatomicMolecule,
-    VibrationalRotor,
+    VibrationalRotorDiatomic,
     h2plus_aug_cc_pv5z_surfaces,
 )
 
@@ -27,10 +27,11 @@ pulse = SineSquareLaser(
     gauge="length",
 )
 
-calculation = VibrationalRotor(
+calculation = VibrationalRotorDiatomic(
     molecule,
     surfaces,
-    nodes=[0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0],
+    r_max=12.0,
+    element_size=2.0,
     n_points=11,
     l_max=12,
     angular_sector="auto",
@@ -41,6 +42,21 @@ calculation = VibrationalRotor(
 )
 result = calculation.run(progress=True)
 ```
+
+When `element_size` is supplied, `r_max` must be an integer multiple of it.
+The resulting element boundaries are uniformly spaced and the final boundary
+is exactly `r_max`.
+
+The sampled radial density is available as `result.radial_probability`, with
+shape `(len(result.times), len(result.radial_grid))`. For the reduced radial
+amplitudes $u_\ell(R)$ used by the implementation,
+
+$$
+P(R) = R^2 \int |\Psi(R, \Omega)|^2\,d\Omega
+     = \sum_\ell |u_\ell(R)|^2.
+$$
+
+It integrates to the sampled norm using `result.radial_weights`.
 
 For a homonuclear molecule in its rotational ground state, `"auto"` retains
 only even angular momenta when all odd-rank interactions vanish. A permanent

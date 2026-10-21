@@ -42,14 +42,34 @@ def _integer(value, name, minimum=0):
     return int(value)
 
 
-def _radial_grid(*, r_max, nodes, n_elements, n_points):
+def _radial_grid(*, r_max, nodes, n_elements, element_size, n_points):
     if nodes is None:
         r_max = _positive_real(r_max, "r_max")
-        n_elements = 10 if n_elements is None else _integer(
-            n_elements, "n_elements", 1
-        )
+        if element_size is not None:
+            element_size = _positive_real(element_size, "element_size")
+            element_count = r_max / element_size
+            rounded_count = round(element_count)
+            if rounded_count < 1 or not np.isclose(
+                element_count, rounded_count, rtol=0.0, atol=1e-12
+            ):
+                raise ValueError(
+                    "r_max must be an integer multiple of element_size."
+                )
+            if n_elements is not None and _integer(
+                n_elements, "n_elements", 1
+            ) != rounded_count:
+                raise ValueError(
+                    "n_elements must agree with r_max and element_size."
+                )
+            n_elements = rounded_count
+        else:
+            n_elements = 10 if n_elements is None else _integer(
+                n_elements, "n_elements", 1
+            )
         boundaries = np.linspace(0.0, r_max, n_elements + 1)
     else:
+        if element_size is not None:
+            raise ValueError("element_size cannot be combined with explicit nodes.")
         boundaries = np.asarray(nodes)
         if (
             boundaries.ndim != 1
@@ -120,7 +140,7 @@ def _state_specification(initial_state):
     return None
 
 
-class VibrationalRotor:
+class VibrationalRotorDiatomic:
     r"""Time-dependent nuclear vibrational-rotor dynamics for a diatomic.
 
     The molecular orientation is expanded in ``Y_l0`` and the electric field
@@ -144,6 +164,7 @@ class VibrationalRotor:
         r_max=None,
         nodes=None,
         n_elements=None,
+        element_size=None,
         n_points=15,
         l_max=12,
         angular_sector="auto",
@@ -171,6 +192,7 @@ class VibrationalRotor:
             r_max=r_max,
             nodes=nodes,
             n_elements=n_elements,
+            element_size=element_size,
             n_points=n_points,
         )
         if self.grid.r[-1] > surfaces.r_max + 1e-12:
@@ -265,7 +287,9 @@ class VibrationalRotor:
         for field in terms:
             gauge = getattr(field, "gauge", "length")
             if gauge != "length":
-                raise ValueError("VibrationalRotor supports length-gauge fields only.")
+                raise ValueError(
+                    "VibrationalRotorDiatomic supports length-gauge fields only."
+                )
         return terms
 
     def _infer_final_time(self):
@@ -420,6 +444,17 @@ class VibrationalRotor:
         expectation_z = angular_expectation(self.angular.cos_theta, self.r)
         return norm, expectation_r, orientation, alignment, expectation_z
 
+    def _radial_probability(self, state):
+        r"""Return ``P(R) = R^2 integral |Psi(R, Omega)|^2 dOmega``.
+
+        The propagated state contains quadrature-weighted samples of the
+        reduced radial amplitudes ``u_l(R)`` in
+        ``Psi = sum_l u_l(R) Y_l0(Omega) / R``. Orthogonality of the spherical
+        harmonics therefore gives ``P(R) = sum_l |u_l(R)|^2``.
+        """
+        reduced_radial_state = state / self._sqrt_weights[None, :]
+        return np.sum(np.abs(reduced_radial_state) ** 2, axis=0)
+
     def run(self, *, progress=False) -> VibrationalRotorResult:
         """Propagate the initial state and return sampled observables."""
         state = self.initial_state.copy()
@@ -435,6 +470,7 @@ class VibrationalRotor:
             "expectation_cos_theta": [],
             "expectation_cos_theta_squared": [],
             "expectation_z": [],
+            "radial_probability": [],
             "solver_iterations": [],
             "residual_norms": [],
             "solver_methods": [],
@@ -450,6 +486,7 @@ class VibrationalRotor:
             sampled["expectation_cos_theta"].append(orientation)
             sampled["expectation_cos_theta_squared"].append(alignment)
             sampled["expectation_z"].append(mean_z)
+            sampled["radial_probability"].append(self._radial_probability(state))
             sampled["solver_iterations"].append(iterations)
             sampled["residual_norms"].append(residual)
             sampled["solver_methods"].append(method)
@@ -481,6 +518,7 @@ class VibrationalRotor:
                 sampled["expectation_cos_theta_squared"]
             ),
             expectation_z=np.asarray(sampled["expectation_z"]),
+            radial_probability=np.asarray(sampled["radial_probability"]),
             solver_iterations=np.asarray(sampled["solver_iterations"], dtype=int),
             residual_norms=np.asarray(sampled["residual_norms"]),
             solver_methods=np.asarray(sampled["solver_methods"]),

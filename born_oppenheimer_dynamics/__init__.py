@@ -4,7 +4,7 @@ from .vibrational_rotor import (
     DiatomicMolecule,
     DiatomicSurfaces,
     RovibrationalState,
-    VibrationalRotor,
+    VibrationalRotorDiatomic,
     VibrationalRotorResult,
     h2plus_aug_cc_pv5z_surfaces,
 )
@@ -13,7 +13,7 @@ __all__ = [
     "DiatomicMolecule",
     "DiatomicSurfaces",
     "RovibrationalState",
-    "VibrationalRotor",
+    "VibrationalRotorDiatomic",
     "VibrationalRotorResult",
     "h2plus_aug_cc_pv5z_surfaces",
 ]

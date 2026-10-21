@@ -8,3 +8,4 @@ dist/
 htmlcov/
 .venv/
 workspace/
+/h2plus_vibrational_rotor.npz
