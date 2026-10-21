@@ -1,6 +1,7 @@
 """Tools for Born-Oppenheimer dynamics."""
 
 from .vibrational_rotor import (
+    CubicCAP,
     DiatomicMolecule,
     DiatomicSurfaces,
     RovibrationalState,
@@ -10,6 +11,7 @@ from .vibrational_rotor import (
 )
 
 __all__ = [
+    "CubicCAP",
     "DiatomicMolecule",
     "DiatomicSurfaces",
     "RovibrationalState",

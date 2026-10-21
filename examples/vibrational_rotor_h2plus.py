@@ -7,6 +7,7 @@ import numpy as np
 from electromagnetic_fields.dipole_fields import TrigonometricGaussianLaser
 
 from born_oppenheimer_dynamics import (
+    CubicCAP,
     DiatomicMolecule,
     VibrationalRotorDiatomic,
     h2plus_aug_cc_pv5z_surfaces,
@@ -40,15 +41,12 @@ calculation = VibrationalRotorDiatomic(
     angular_sector="auto",
     initial_state="groundstate",
     fields=[pulse],
+    cap=CubicCAP(alpha=0.8, eta=1.0),
     final_time=t_final,
-    time_step=0.25,
+    time_step=1/2,
     sample_interval=1,
     integrator_options={"rtol": 0.0, "atol": 1e-12},
 )
-
-print("FEM-DVR element boundaries:", calculation.grid.nodes)
-print("Active radial grid (Dirichlet endpoints omitted):", calculation.r)
-print(f"Number of radial grid points: {calculation.r.size}")
 
 mebibyte = 1024**2
 n_samples = calculation.n_steps + 1
@@ -100,14 +98,56 @@ axes[1].set_ylabel(r"$\langle\cos^2\theta\rangle$")
 axes[2].plot(result.times, result.expectation_r)
 axes[2].set_ylabel(r"$\langle R\rangle$")
 axes[3].semilogy(result.times, abs(1.0 - result.norms))
-axes[3].set_ylabel("norm error")
+axes[3].set_ylabel("absorbed probability")
 axes[3].set_xlabel("time (a.u.)")
 figure.tight_layout()
 
 radial_figure, radial_axis = plt.subplots(figsize=(6, 4))
-radial_axis.plot(result.radial_grid, result.radial_probability[-1])
+legend_handles = []
+if len(result.radial_probability) > 1:
+    (initial_line,) = radial_axis.semilogy(
+        result.radial_grid,
+        result.radial_probability[0],
+        linestyle="--",
+        label=r"$P(R;t=0)$",
+    )
+    legend_handles.append(initial_line)
+(final_line,) = radial_axis.semilogy(
+    result.radial_grid,
+    result.radial_probability[-1],
+    label=r"$P(R;t=t_f)$",
+)
+legend_handles.append(final_line)
 radial_axis.set_xlabel(r"$R$ (bohr)")
 radial_axis.set_ylabel(r"$P(R)$")
-radial_axis.set_title(f"Final radial probability, $t={result.times[-1]:.1f}$ a.u.")
+radial_axis.set_ylim(bottom=1e-20)
+radial_axis.set_title("Radial probability")
+if calculation.cap_potential is not None:
+    cap_profile = -calculation.cap_potential.imag
+    cap_label = r"$W_{\mathrm{CAP}}(R)$"
+    if isinstance(calculation.cap, CubicCAP):
+        cap_label = (
+            rf"$W_{{\mathrm{{CAP}}}}(R;\alpha={calculation.cap.alpha:g},"
+            rf"\eta={calculation.cap.eta:g})$"
+        )
+    cap_axis = radial_axis.twinx()
+    (cap_line,) = cap_axis.plot(
+        result.radial_grid,
+        cap_profile,
+        color="0.35",
+        label=cap_label,
+    )
+    legend_handles.append(cap_line)
+    cap_axis.fill_between(
+        result.radial_grid,
+        0.0,
+        cap_profile,
+        color="0.7",
+        alpha=0.35,
+    )
+    cap_axis.set_ylabel(r"CAP strength $-\operatorname{Im}W(R)$", color="0.35")
+    cap_axis.tick_params(axis="y", colors="0.35")
+    cap_axis.set_ylim(bottom=0.0)
+radial_axis.legend(handles=legend_handles, loc="lower left")
 radial_figure.tight_layout()
 plt.show()

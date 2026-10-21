@@ -17,8 +17,10 @@ def test_split_crank_nicolson_matches_dense_direct_solve(
         [
             [[0.4, -0.1], [-0.1, 0.7]],
             [[0.8, -0.2], [-0.2, 1.1]],
-        ]
+        ],
+        dtype=np.complex128,
     )
+    h0[:, [0, 1], [0, 1]] -= 1j * np.array([0.1, 0.2])
     coupling = np.array(
         [
             [0.03, 0.01, 0.08, 0.00],
@@ -44,7 +46,7 @@ def test_split_crank_nicolson_matches_dense_direct_solve(
     state = np.array([[0.7 + 0.1j, -0.2], [0.1j, 0.5]])
     propagated, diagnostics = propagator.step(state, 0.0)
 
-    field_free = np.zeros((4, 4))
+    field_free = np.zeros((4, 4), dtype=np.complex128)
     field_free[:2, :2] = h0[0]
     field_free[2:, 2:] = h0[1]
     hamiltonian = field_free + field_value * coupling
@@ -81,3 +83,24 @@ def test_exact_field_free_path():
     np.testing.assert_allclose(propagated[0], expected, atol=2e-14)
     assert diagnostics.method == "field-free"
     assert diagnostics.iterations == 0
+
+
+def test_complex_absorbing_potential_has_crank_nicolson_decay_factor():
+    gamma = np.array([0.2, 0.7])
+    h0 = np.diag(-1j * gamma)[None, :, :]
+    propagator = SplitCrankNicolson(
+        h0,
+        time_step=0.1,
+        field=lambda time: 0.0,
+        interaction=lambda state, field: np.zeros_like(state),
+        interaction_bound=lambda field: 0.0,
+    )
+    state = np.array([[0.6 + 0.2j, -0.3j]])
+
+    propagated, diagnostics = propagator.step(state, 0.0)
+
+    c = propagator.time_step / 2
+    decay_factor = (1 - c * gamma) / (1 + c * gamma)
+    np.testing.assert_allclose(propagated, decay_factor[None, :] * state)
+    assert np.linalg.norm(propagated) < np.linalg.norm(state)
+    assert diagnostics.residual_norm < 1e-12

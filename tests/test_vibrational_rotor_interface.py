@@ -3,6 +3,7 @@ import pytest
 from electromagnetic_fields.dipole_fields import SineSquareLaser
 
 from born_oppenheimer_dynamics.vibrational_rotor import (
+    CubicCAP,
     DiatomicMolecule,
     DiatomicSurfaces,
     VibrationalRotorDiatomic,
@@ -190,6 +191,88 @@ def test_velocity_gauge_field_is_rejected(homonuclear_surfaces):
             nodes=[0.0, 3.0, 6.0],
             n_points=5,
             fields=pulse,
+            final_time=0.1,
+            time_step=0.05,
+        )
+
+
+def test_cap_is_excluded_from_initial_state_hamiltonian(homonuclear_surfaces):
+    common_options = dict(
+        nodes=[0.0, 3.0, 6.0],
+        n_points=5,
+        l_max=0,
+        final_time=0.1,
+        time_step=0.05,
+    )
+    molecule = DiatomicMolecule(("H-1", "H-1"))
+    without_cap = VibrationalRotorDiatomic(
+        molecule,
+        homonuclear_surfaces,
+        **common_options,
+    )
+    with_cap = VibrationalRotorDiatomic(
+        molecule,
+        homonuclear_surfaces,
+        cap=CubicCAP(alpha=0.5, eta=0.2),
+        **common_options,
+    )
+
+    np.testing.assert_array_equal(
+        with_cap.field_free_blocks, without_cap.field_free_blocks
+    )
+    np.testing.assert_array_equal(with_cap.initial_state, without_cap.initial_state)
+    assert np.iscomplexobj(with_cap.propagation_blocks)
+    diagonal_difference = np.diagonal(
+        with_cap.propagation_blocks - with_cap.field_free_blocks,
+        axis1=1,
+        axis2=2,
+    )
+    np.testing.assert_allclose(diagonal_difference, with_cap.cap_potential[None, :])
+
+
+def test_cap_absorbs_without_normalizing_observables(homonuclear_surfaces):
+    calculation = VibrationalRotorDiatomic(
+        DiatomicMolecule(("H-1", "H-1")),
+        homonuclear_surfaces,
+        nodes=[0.0, 3.0, 6.0],
+        n_points=3,
+        l_max=0,
+        initial_state=np.array([[0.0, 0.0, 1.0]]),
+        cap=CubicCAP(alpha=0.5, eta=0.2),
+        final_time=0.2,
+        time_step=0.02,
+    )
+
+    result = calculation.run()
+
+    assert result.norms[-1] < result.norms[0]
+    assert np.all(np.diff(result.norms) <= 2e-14)
+    np.testing.assert_allclose(
+        (result.radial_probability * result.radial_grid[None, :])
+        @ result.radial_weights,
+        result.expectation_r,
+    )
+    assert result.expectation_r[-1] != pytest.approx(
+        result.expectation_r[-1] / result.norms[-1]
+    )
+
+
+@pytest.mark.parametrize(
+    ("cap", "exception", "message"),
+    [
+        (1.0, TypeError, "callable or None"),
+        (lambda r, r_max: np.zeros(1), ValueError, "shape"),
+        (lambda r, r_max: 1j * np.ones_like(r), ValueError, "non-positive"),
+    ],
+)
+def test_invalid_cap_is_rejected(homonuclear_surfaces, cap, exception, message):
+    with pytest.raises(exception, match=message):
+        VibrationalRotorDiatomic(
+            DiatomicMolecule(("H-1", "H-1")),
+            homonuclear_surfaces,
+            nodes=[0.0, 3.0, 6.0],
+            n_points=3,
+            cap=cap,
             final_time=0.1,
             time_step=0.05,
         )

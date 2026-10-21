@@ -154,6 +154,10 @@ class VibrationalRotorDiatomic:
 
     ``-E**3*(beta_parallel*cos(theta)**3 +
     3*beta_perp*sin(theta)**2*cos(theta))/6``.
+
+    ``cap`` may be ``None`` or a callable with signature
+    ``cap(radial_grid, r_max)``. It is applied only during propagation, not
+    while constructing a field-free rovibrational initial state.
     """
 
     def __init__(
@@ -170,6 +174,7 @@ class VibrationalRotorDiatomic:
         angular_sector="auto",
         initial_state="groundstate",
         fields=None,
+        cap=None,
         initial_time=0.0,
         final_time=None,
         time_step=None,
@@ -203,6 +208,8 @@ class VibrationalRotorDiatomic:
         self.r = np.asarray(self.grid.r[1:-1], dtype=float)
         self.radial_weights = np.asarray(self.grid.weights[1:-1], dtype=float)
         self._sqrt_weights = np.sqrt(self.radial_weights)
+        self.cap = cap
+        self.cap_potential = self._evaluate_cap(cap)
         interpolated = surfaces.interpolate(self.r)
         self.electronic_energy = interpolated.electronic_energy
         if interpolated.dipole is None:
@@ -247,6 +254,7 @@ class VibrationalRotorDiatomic:
 
         self.field_free_blocks = self._build_field_free_blocks()
         self.initial_state = self._initial_state(initial_state)
+        self.propagation_blocks = self._build_propagation_blocks()
 
         self.initial_time = _finite_real(initial_time, "initial_time")
         if final_time is None:
@@ -264,13 +272,35 @@ class VibrationalRotorDiatomic:
 
         options = dict(integrator_options or {})
         self.propagator = SplitCrankNicolson(
-            self.field_free_blocks,
+            self.propagation_blocks,
             time_step=self.time_step,
             field=self.electric_field,
             interaction=self._interaction,
             interaction_bound=self._interaction_bound,
             **options,
         )
+
+    def _evaluate_cap(self, cap):
+        if cap is None:
+            return None
+        if not callable(cap):
+            raise TypeError("cap must be callable or None.")
+        r_max = float(self.grid.nodes[-1])
+        values = np.asarray(cap(self.r.copy(), r_max))
+        if values.shape != self.r.shape:
+            raise ValueError(
+                f"cap must return an array with shape {self.r.shape}, "
+                f"not {values.shape}."
+            )
+        if not np.all(np.isfinite(values)):
+            raise ValueError("cap must return finite values.")
+        values = np.asarray(values, dtype=np.complex128)
+        if np.any(values.imag > 0):
+            raise ValueError(
+                "The imaginary part of a complex absorbing potential must "
+                "be non-positive."
+            )
+        return values
 
     @staticmethod
     def _field_terms(fields):
@@ -343,6 +373,14 @@ class VibrationalRotorDiatomic:
             blocks[index] = kinetic_radial + np.diag(
                 centrifugal + self.electronic_energy
             )
+        return blocks
+
+    def _build_propagation_blocks(self):
+        if self.cap_potential is None:
+            return self.field_free_blocks
+        blocks = np.asarray(self.field_free_blocks, dtype=np.complex128).copy()
+        diagonal = np.arange(len(self.r))
+        blocks[:, diagonal, diagonal] += self.cap_potential[None, :]
         return blocks
 
     def _initial_state(self, initial_state):

@@ -13,6 +13,7 @@ uses length-gauge fields from `electromagnetic-fields`, isotope masses from
 from electromagnetic_fields.dipole_fields import SineSquareLaser
 
 from born_oppenheimer_dynamics import (
+    CubicCAP,
     DiatomicMolecule,
     VibrationalRotorDiatomic,
     h2plus_aug_cc_pv5z_surfaces,
@@ -37,6 +38,7 @@ calculation = VibrationalRotorDiatomic(
     angular_sector="auto",
     initial_state="groundstate",
     fields=[pulse],
+    cap=CubicCAP(alpha=0.8),
     final_time=pulse.time_support[1] + 20.0,
     time_step=0.25,
 )
@@ -51,12 +53,19 @@ The sampled radial density is available as `result.radial_probability`, with
 shape `(len(result.times), len(result.radial_grid))`. For the reduced radial
 amplitudes $u_\ell(R)$ used by the implementation,
 
-$$
-P(R) = R^2 \int |\Psi(R, \Omega)|^2\,d\Omega
-     = \sum_\ell |u_\ell(R)|^2.
-$$
+$$P(R) = R^2 \int |\Psi(R, \Omega)|^2\,d\Omega = \sum_\ell |u_\ell(R)|^2.$$
 
 It integrates to the sampled norm using `result.radial_weights`.
+
+`cap` accepts either `None` or a callable with signature
+`cap(radial_grid, r_max)`. `CubicCAP(alpha, eta=1.0)` supplies the potential
+
+$$W(R) = -i\eta\left(R-\alpha R_{\max}\right)^3$$
+
+for $R>\alpha R_{\max}$ and zero elsewhere. The CAP is included only during
+real-time propagation; initial rovibrational states are constructed from the
+physical Hermitian Hamiltonian. Norm loss represents absorbed probability.
+Expectation values remain unnormalized moments of the surviving wavefunction.
 
 For a homonuclear molecule in its rotational ground state, `"auto"` retains
 only even angular momenta when all odd-rank interactions vanish. A permanent
