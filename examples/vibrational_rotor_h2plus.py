@@ -25,7 +25,7 @@ pulse = TrigonometricGaussianLaser(
     gauge="length",
 )
 t_end_pulse = pulse.t_end
-t_final = t_end_pulse
+t_final = 4*t_end_pulse
 
 r_max = 8.0
 element_size = 0.2
@@ -43,7 +43,7 @@ calculation = VibrationalRotorDiatomic(
     fields=[pulse],
     cap=CubicCAP(alpha=0.8, eta=1.0),
     final_time=t_final,
-    time_step=1/2,
+    time_step=1/4,
     sample_interval=1,
     integrator_options={"rtol": 0.0, "atol": 1e-12},
 )
@@ -110,6 +110,8 @@ axes[3].set_ylabel(
 axes[4].semilogy(result.times, abs(1.0 - result.norms))
 axes[4].set_ylabel("absorbed probability")
 axes[4].set_xlabel("time (a.u.)")
+for axis in axes:
+    axis.axvline(t_end_pulse, color="0.35", linestyle="--", linewidth=1.0)
 figure.tight_layout()
 
 radial_figure, radial_axis = plt.subplots(figsize=(6, 4))
