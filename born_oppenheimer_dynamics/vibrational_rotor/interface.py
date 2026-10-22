@@ -10,6 +10,7 @@ import numpy as np
 from grid_lib.pseudospectral_grids import FEMDVR, GaussLegendreLobatto, Linear_map
 from scipy.linalg import eigh
 
+from .._rotor import RotorFieldInteraction, angular_momenta, select_angular_sector
 from .angular import rotor_angular_operators
 from .propagator import SplitCrankNicolson
 from .result import VibrationalRotorResult
@@ -239,18 +240,24 @@ class VibrationalRotorDiatomic:
             or np.any(self.beta_perpendicular != 0)
         )
 
-        self.angular_sector = self._angular_sector(
-            angular_sector, self.initial_state_specification
+        initial_rotational = (
+            None
+            if self.initial_state_specification is None
+            else self.initial_state_specification.rotational
         )
-        if self.angular_sector == "full":
-            self.ell = np.arange(self.l_max + 1)
-        elif self.angular_sector == "even":
-            self.ell = np.arange(0, self.l_max + 1, 2)
-        else:
-            self.ell = np.arange(1, self.l_max + 1, 2)
-        if len(self.ell) == 0:
-            raise ValueError("l_max does not contain the selected angular sector.")
+        self.angular_sector = select_angular_sector(
+            angular_sector, initial_rotational, self.has_odd_interaction
+        )
+        self.ell = angular_momenta(self.l_max, self.angular_sector)
         self.angular = rotor_angular_operators(self.l_max, self.ell)
+        self.field_interaction = RotorFieldInteraction(
+            self.angular,
+            self.dipole,
+            self.alpha_parallel,
+            self.alpha_perpendicular,
+            self.beta_parallel,
+            self.beta_perpendicular,
+        )
 
         self.field_free_blocks = self._build_field_free_blocks()
         self.initial_state = self._initial_state(initial_state)
@@ -335,26 +342,6 @@ class VibrationalRotorDiatomic:
             ends.append(support[1])
         return max(ends)
 
-    def _angular_sector(self, requested, state_specification):
-        if requested not in {"auto", "full", "even", "odd"}:
-            raise ValueError("angular_sector must be 'auto', 'full', 'even', or 'odd'.")
-        if requested == "auto":
-            if self.has_odd_interaction or state_specification is None:
-                return "full"
-            return "even" if state_specification.rotational % 2 == 0 else "odd"
-        if requested != "full" and self.has_odd_interaction:
-            raise ValueError(
-                "An even/odd angular sector cannot be used with dipole or "
-                "first-hyperpolarizability coupling."
-            )
-        if state_specification is not None and requested != "full":
-            expected = "even" if state_specification.rotational % 2 == 0 else "odd"
-            if requested != expected:
-                raise ValueError(
-                    f"The initial rotational state requires the {expected} sector."
-                )
-        return requested
-
     def _build_field_free_blocks(self):
         derivative = np.asarray(self.grid.D2[1:-1, 1:-1], dtype=float)
         weighted_derivative = (
@@ -425,42 +412,10 @@ class VibrationalRotorDiatomic:
         return float(value)
 
     def _interaction(self, state, field):
-        result = -field * (
-            self.angular.cos_theta @ (self.dipole[None, :] * state)
-        )
-        field_squared = field**2
-        result -= 0.5 * field_squared * (
-            self.alpha_perpendicular[None, :] * state
-            + self.angular.cos_theta_squared
-            @ (self.alpha_anisotropy[None, :] * state)
-        )
-        if np.any(self.beta_parallel != 0) or np.any(self.beta_perpendicular != 0):
-            result -= field**3 / 6 * (
-                self.angular.cos_theta_cubed
-                @ (self.beta_parallel[None, :] * state)
-                + 3
-                * self.angular.sin_theta_squared_cos_theta
-                @ (self.beta_perpendicular[None, :] * state)
-            )
-        return result
+        return self.field_interaction.apply(state, field)
 
     def _interaction_bound(self, field):
-        bound = abs(field) * np.max(np.abs(self.dipole)) * np.linalg.norm(
-            self.angular.cos_theta, 2
-        )
-        bound += 0.5 * field**2 * (
-            np.max(np.abs(self.alpha_perpendicular))
-            + np.max(np.abs(self.alpha_anisotropy))
-            * np.linalg.norm(self.angular.cos_theta_squared, 2)
-        )
-        bound += abs(field) ** 3 / 6 * (
-            np.max(np.abs(self.beta_parallel))
-            * np.linalg.norm(self.angular.cos_theta_cubed, 2)
-            + 3
-            * np.max(np.abs(self.beta_perpendicular))
-            * np.linalg.norm(self.angular.sin_theta_squared_cos_theta, 2)
-        )
-        return float(bound)
+        return self.field_interaction.bound(field)
 
     def _observables(self, state):
         probability = np.abs(state) ** 2

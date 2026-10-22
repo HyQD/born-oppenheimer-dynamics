@@ -79,6 +79,43 @@ The packaged H2+ reference data use aug-cc-pV5Z electronic curves from 0.1 to
 12 bohr at 0.1-bohr spacing. `DiatomicSurfaces.from_npz()` loads the established
 `R`, `E_R`, and `alpha` array layout for other datasets.
 
+## Time-dependent rigid rotor
+
+`RigidRotorDiatomic` provides a separate fixed-bond-length model while sharing
+the vibrational rotor's angular operators, length-gauge field interaction, and
+Crank-Nicolson propagator. Its field-free Hamiltonian is
+
+$$H_0 = B\mathbf{J}^2, \qquad B = \frac{1}{2\mu R_0^2}.$$
+
+The rotational constant may be supplied directly in atomic units. Alternatively,
+the reduced mass is inferred from `DiatomicMolecule` and the rotational constant
+is calculated from `bond_length`. Molecular-response values can be supplied
+directly as scalars or interpolated from `DiatomicSurfaces` at the chosen bond
+length. The electronic energy is omitted because it contributes only a global
+phase when the bond length is fixed.
+
+```python
+from born_oppenheimer_dynamics import RigidRotorDiatomic
+
+calculation = RigidRotorDiatomic.from_surfaces(
+    molecule,
+    surfaces,
+    bond_length=2.0,
+    l_max=12,
+    initial_state="groundstate",
+    fields=[pulse],
+    final_time=pulse.time_support[1] + 20.0,
+    time_step=0.25,
+)
+result = calculation.run(progress=True)
+```
+
+The result contains orientation, alignment, and the population of every
+retained angular-momentum channel at each sampled time. As in the vibrational
+model, `angular_sector="auto"` uses a parity-restricted basis when the initial
+state and interaction permit it, and otherwise selects the full basis. A rigid
+rotor has no radial grid or CAP.
+
 ## Installation
 
 Install the package and its runtime dependencies with:
