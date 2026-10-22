@@ -2,6 +2,17 @@
 
 Tools for Born-Oppenheimer dynamics.
 
+## Documentation
+
+The detailed documentation covers the physical models and their shared
+numerical components:
+
+- [Documentation overview](docs/index.md)
+- [Rigid-rotor model](docs/rigid_rotor.md)
+- [Vibrational-rotor model](docs/vibrational_rotor.md)
+- [Electric-field interaction](docs/electric_fields.md)
+- [Crank–Nicolson time propagation](docs/time_propagation.md)
+
 ## Time-dependent vibrational rotor
 
 The vibrational-rotor interface propagates a diatomic nuclear wavefunction on
