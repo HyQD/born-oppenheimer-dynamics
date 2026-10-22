@@ -56,7 +56,7 @@ integer_bytes = np.dtype(np.int64).itemsize
 complex_bytes = np.dtype(np.complex128).itemsize
 solver_method_bytes = np.dtype("<U11").itemsize
 sampled_scalar_bytes = n_samples * (
-    8 * float_bytes + integer_bytes + solver_method_bytes
+    9 * float_bytes + integer_bytes + solver_method_bytes
 )
 final_state_bytes = calculation.ell.size * calculation.r.size * complex_bytes
 metadata_bytes = (
@@ -90,16 +90,26 @@ result_array_bytes = sum(
 print(f"Uncompressed result-array payload: {result_array_bytes / mebibyte:.2f} MiB")
 print(f"Compressed NPZ file: {output_path.stat().st_size / mebibyte:.2f} MiB")
 
-figure, axes = plt.subplots(4, 1, sharex=True, figsize=(8, 8))
+figure, axes = plt.subplots(5, 1, sharex=True, figsize=(8, 10))
 axes[0].plot(result.times, result.electric_field)
 axes[0].set_ylabel(r"$E(t)$")
 axes[1].plot(result.times, result.expectation_cos_theta_squared)
 axes[1].set_ylabel(r"$\langle\cos^2\theta\rangle$")
 axes[2].plot(result.times, result.expectation_r)
 axes[2].set_ylabel(r"$\langle R\rangle$")
-axes[3].semilogy(result.times, abs(1.0 - result.norms))
-axes[3].set_ylabel("absorbed probability")
-axes[3].set_xlabel("time (a.u.)")
+radial_alignment_correlation = (
+    result.expectation_r_cos_theta_squared
+    - result.expectation_r * result.expectation_cos_theta_squared
+)
+axes[3].plot(result.times, radial_alignment_correlation)
+axes[3].set_ylabel(
+    r"$\langle R\cos^2\theta\rangle$"
+    "\n"
+    r"$-\langle R\rangle\langle\cos^2\theta\rangle$"
+)
+axes[4].semilogy(result.times, abs(1.0 - result.norms))
+axes[4].set_ylabel("absorbed probability")
+axes[4].set_xlabel("time (a.u.)")
 figure.tight_layout()
 
 radial_figure, radial_axis = plt.subplots(figsize=(6, 4))

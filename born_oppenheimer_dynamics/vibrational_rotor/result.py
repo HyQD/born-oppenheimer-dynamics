@@ -24,6 +24,7 @@ class VibrationalRotorResult:
     expectation_cos_theta: np.ndarray
     expectation_cos_theta_squared: np.ndarray
     expectation_z: np.ndarray
+    expectation_r_cos_theta_squared: np.ndarray
     radial_probability: np.ndarray
     solver_iterations: np.ndarray
     residual_norms: np.ndarray
@@ -66,6 +67,7 @@ class VibrationalRotorResult:
             expectation_cos_theta=self.expectation_cos_theta,
             expectation_cos_theta_squared=self.expectation_cos_theta_squared,
             expectation_z=self.expectation_z,
+            expectation_r_cos_theta_squared=self.expectation_r_cos_theta_squared,
             radial_probability=self.radial_probability,
             solver_iterations=self.solver_iterations,
             residual_norms=self.residual_norms,
