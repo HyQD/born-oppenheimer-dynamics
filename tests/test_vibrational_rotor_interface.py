@@ -48,6 +48,10 @@ def test_field_free_ground_state_uses_even_sector_and_stays_stationary(
     np.testing.assert_allclose(result.expectation_r, result.expectation_r[0])
     np.testing.assert_allclose(result.expectation_cos_theta, 0.0, atol=1e-15)
     np.testing.assert_allclose(result.expectation_cos_theta_squared, 1 / 3)
+    np.testing.assert_allclose(
+        result.expectation_r_cos_theta_squared,
+        result.expectation_r / 3,
+    )
     assert result.radial_probability.shape == (
         len(result.times),
         len(result.radial_grid),
@@ -68,6 +72,10 @@ def test_field_free_ground_state_uses_even_sector_and_stays_stationary(
     with np.load(output_path) as stored:
         np.testing.assert_array_equal(
             stored["radial_probability"], result.radial_probability
+        )
+        np.testing.assert_array_equal(
+            stored["expectation_r_cos_theta_squared"],
+            result.expectation_r_cos_theta_squared,
         )
     assert set(result.solver_methods[1:]) == {"field-free"}
 
@@ -99,6 +107,19 @@ def test_heteronuclear_dipole_uses_full_sector(distance):
     np.testing.assert_array_equal(calculation.ell, [0, 1, 2, 3])
     assert np.any(result.expectation_cos_theta[1:] != 0)
     np.testing.assert_allclose(result.norms, 1.0, atol=2e-12)
+    weighted_final_state = (
+        result.final_state * np.sqrt(result.radial_weights)[None, :]
+    )
+    expected_r_cos_theta_squared = np.einsum(
+        "lr,lk,kr,r->",
+        weighted_final_state.conj(),
+        calculation.angular.cos_theta_squared,
+        weighted_final_state,
+        result.radial_grid,
+    ).real
+    assert result.expectation_r_cos_theta_squared[-1] == pytest.approx(
+        expected_r_cos_theta_squared
+    )
 
 
 def test_heteronuclear_surface_requires_permanent_dipole(homonuclear_surfaces):

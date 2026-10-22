@@ -56,6 +56,8 @@ amplitudes $u_\ell(R)$ used by the implementation,
 $$P(R) = R^2 \int |\Psi(R, \Omega)|^2\,d\Omega = \sum_\ell |u_\ell(R)|^2.$$
 
 It integrates to the sampled norm using `result.radial_weights`.
+The unnormalized mixed moment $\langle R\cos^2\theta\rangle$ is available as
+`result.expectation_r_cos_theta_squared`.
 
 `cap` accepts either `None` or a callable with signature
 `cap(radial_grid, r_max)`. `CubicCAP(alpha, eta=1.0)` supplies the potential

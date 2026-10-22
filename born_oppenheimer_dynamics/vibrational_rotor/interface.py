@@ -480,7 +480,17 @@ class VibrationalRotorDiatomic:
         orientation = angular_expectation(self.angular.cos_theta)
         alignment = angular_expectation(self.angular.cos_theta_squared)
         expectation_z = angular_expectation(self.angular.cos_theta, self.r)
-        return norm, expectation_r, orientation, alignment, expectation_z
+        expectation_r_cos_theta_squared = angular_expectation(
+            self.angular.cos_theta_squared, self.r
+        )
+        return (
+            norm,
+            expectation_r,
+            orientation,
+            alignment,
+            expectation_z,
+            expectation_r_cos_theta_squared,
+        )
 
     def _radial_probability(self, state):
         r"""Return ``P(R) = R^2 integral |Psi(R, Omega)|^2 dOmega``.
@@ -508,6 +518,7 @@ class VibrationalRotorDiatomic:
             "expectation_cos_theta": [],
             "expectation_cos_theta_squared": [],
             "expectation_z": [],
+            "expectation_r_cos_theta_squared": [],
             "radial_probability": [],
             "solver_iterations": [],
             "residual_norms": [],
@@ -516,7 +527,14 @@ class VibrationalRotorDiatomic:
 
         def record(step, iterations, residual, method):
             time = self.initial_time + step * self.time_step
-            norm, mean_r, orientation, alignment, mean_z = self._observables(state)
+            (
+                norm,
+                mean_r,
+                orientation,
+                alignment,
+                mean_z,
+                mean_r_cos_theta_squared,
+            ) = self._observables(state)
             sampled["times"].append(time)
             sampled["electric_field"].append(self.electric_field(time))
             sampled["norms"].append(norm)
@@ -524,6 +542,9 @@ class VibrationalRotorDiatomic:
             sampled["expectation_cos_theta"].append(orientation)
             sampled["expectation_cos_theta_squared"].append(alignment)
             sampled["expectation_z"].append(mean_z)
+            sampled["expectation_r_cos_theta_squared"].append(
+                mean_r_cos_theta_squared
+            )
             sampled["radial_probability"].append(self._radial_probability(state))
             sampled["solver_iterations"].append(iterations)
             sampled["residual_norms"].append(residual)
@@ -556,6 +577,9 @@ class VibrationalRotorDiatomic:
                 sampled["expectation_cos_theta_squared"]
             ),
             expectation_z=np.asarray(sampled["expectation_z"]),
+            expectation_r_cos_theta_squared=np.asarray(
+                sampled["expectation_r_cos_theta_squared"]
+            ),
             radial_probability=np.asarray(sampled["radial_probability"]),
             solver_iterations=np.asarray(sampled["solver_iterations"], dtype=int),
             residual_norms=np.asarray(sampled["residual_norms"]),
