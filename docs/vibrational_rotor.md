@@ -114,6 +114,8 @@ part. The CAP is excluded when constructing a field-free initial state and
 included during real-time propagation. The state is not renormalized, so norm
 loss represents absorbed probability. Crank–Nicolson remains applicable, but
 the non-Hermitian Hamiltonian deliberately makes the propagation nonunitary.
+The built-in profile is provided by `grid-lib` and re-exported here to preserve
+the existing `born_oppenheimer_dynamics.CubicCAP` interface.
 
 ## Observables and radial probability
 
