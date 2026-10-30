@@ -7,6 +7,7 @@ otherwise.
 The documentation is divided into the physical models and the numerical
 components shared by them:
 
+- [Installation](installation.md)
 - [Rigid-rotor model](rigid_rotor.md)
 - [Vibrational-rotor model](vibrational_rotor.md)
 - [Electric-field interaction](electric_fields.md)

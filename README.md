@@ -8,6 +8,7 @@ The detailed documentation covers the physical models and their shared
 numerical components:
 
 - [Documentation overview](docs/index.md)
+- [Installation](docs/installation.md)
 - [Rigid-rotor model](docs/rigid_rotor.md)
 - [Vibrational-rotor model](docs/vibrational_rotor.md)
 - [Electric-field interaction](docs/electric_fields.md)
@@ -129,7 +130,30 @@ rotor has no radial grid or CAP.
 
 ## Installation
 
-Install the package and its runtime dependencies with:
+The package supports Python 3.12 through 3.14. A clean virtual environment is
+recommended:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+```
+
+Install the four HyQD dependencies directly from GitHub, followed by this
+package:
+
+```bash
+python -m pip install \
+    "git+https://github.com/HyQD/electromagnetic-fields.git" \
+    "git+https://github.com/HyQD/grid-lib.git" \
+    "git+https://github.com/HyQD/integrator-lib.git" \
+    "git+https://github.com/HyQD/matter_field_params.git"
+
+python -m pip install \
+    "git+https://github.com/HyQD/born-oppenheimer-dynamics.git"
+```
+
+From a local checkout, install the package and its runtime dependencies with:
 
 ```bash
 python -m pip install .
@@ -140,3 +164,6 @@ For development, install the package in editable mode with its test dependencies
 ```bash
 python -m pip install -e ".[dev]"
 ```
+
+See the [installation guide](docs/installation.md) for editable installation
+of all HyQD dependencies, revision pinning, and verification commands.
