@@ -80,6 +80,10 @@ The bond length must lie inside the tabulated surface interval. The electronic
 energy at a fixed geometry is omitted because it contributes only a global
 phase.
 
+`DiatomicElectronicData.to_diatomic_surfaces()` selects a static or dynamic
+response calculated by the optional PySCF backend; see
+[H2+ electronic properties](h2plus_electronic_properties.md).
+
 ## Initial state
 
 `initial_state` may be any of the following:

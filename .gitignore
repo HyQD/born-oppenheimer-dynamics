@@ -9,3 +9,6 @@ htmlcov/
 .venv/
 workspace/
 /h2plus_vibrational_rotor.npz
+/h2plus_gto_polarizability.npz
+/h2plus_gto_polarizability.png
+/h2plus_gto_potential_energy.png
