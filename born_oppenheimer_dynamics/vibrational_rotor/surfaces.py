@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
+from types import MappingProxyType
 
 import numpy as np
 from scipy.interpolate import CubicSpline
@@ -55,6 +57,7 @@ class DiatomicSurfaces:
         beta_parallel=None,
         beta_perpendicular=None,
         label=None,
+        metadata=None,
     ):
         distance = np.asarray(internuclear_distance)
         if (
@@ -92,6 +95,11 @@ class DiatomicSurfaces:
             beta_perpendicular, "beta_perpendicular", size, optional=True
         )
         self.label = None if label is None else str(label)
+        if metadata is None:
+            metadata = {}
+        if not isinstance(metadata, Mapping):
+            raise TypeError("metadata must be a mapping.")
+        self.metadata = MappingProxyType(dict(metadata))
 
     @property
     def r_min(self) -> float:
