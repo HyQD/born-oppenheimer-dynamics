@@ -109,6 +109,9 @@ python -m pip install -e ".[pyscf]"
 The rotor models and previously saved electronic-property data remain usable
 without this extra.
 
+See [H2+ electronic properties](h2plus_electronic_properties.md) for the
+method, limitations, and calculation interface.
+
 ## Verify the installation
 
 Check dependency metadata and the imported package location:

@@ -7,6 +7,9 @@ import numpy as np
 from scipy.constants import c, h, physical_constants
 
 from born_oppenheimer_dynamics import (
+    DiatomicMolecule,
+    RigidRotorDiatomic,
+    VibrationalRotorDiatomic,
     compute_h2plus_gto,
     compute_hydrogen_gto_polarizability,
 )
@@ -40,6 +43,36 @@ result = compute_h2plus_gto(
     progress=True,
 )
 result.save("h2plus_gto_polarizability.npz")
+
+# Select one response curve for the real rotor Hamiltonians. Omitting the
+# frequency is allowed only when the electronic result contains one frequency.
+static_surfaces = result.to_diatomic_surfaces(frequency=0.0)
+laser_surfaces = result.to_diatomic_surfaces(frequency=frequency_800_nm)
+
+# The same selected electronic surfaces can initialize either nuclear model.
+# These objects demonstrate the interface without running a propagation.
+molecule = DiatomicMolecule(("H-1", "H-1"))
+rigid_rotor = RigidRotorDiatomic.from_surfaces(
+    molecule,
+    laser_surfaces,
+    bond_length=2.0,
+    l_max=12,
+    fields=[],
+    final_time=1.0,
+    time_step=0.25,
+)
+vibrational_rotor = VibrationalRotorDiatomic(
+    molecule,
+    laser_surfaces,
+    r_max=12.0,
+    element_size=4.0,
+    n_points=15,
+    l_max=12,
+    fields=[],
+    final_time=1.0,
+    time_step=0.25,
+)
+
 hydrogen_polarizability = compute_hydrogen_gto_polarizability(
     basis=basis,
     frequencies=frequencies[1:],
@@ -53,6 +86,21 @@ hydrogen_isotropic = np.trace(
 parallel = result.polarizability_parallel
 perpendicular = result.polarizability_perpendicular
 anisotropic = parallel - perpendicular
+
+energy_figure, energy_axis = plt.subplots(figsize=(7, 4))
+energy_axis.plot(
+    static_surfaces.internuclear_distance,
+    static_surfaces.electronic_energy,
+)
+energy_axis.set_xlabel(r"$R$ (bohr)")
+energy_axis.set_ylabel(r"$V_{\mathrm{BO}}(R)$ (hartree)")
+energy_axis.set_title(r"H$_2^+$ Born--Oppenheimer potential")
+energy_axis.grid(alpha=0.25)
+energy_figure.tight_layout()
+energy_figure.savefig(
+    Path("h2plus_gto_potential_energy.png"),
+    dpi=200,
+)
 
 figure, axes = plt.subplots(3, 1, sharex=True, figsize=(10, 9))
 quantities = (

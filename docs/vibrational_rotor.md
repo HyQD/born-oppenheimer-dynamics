@@ -52,6 +52,10 @@ from born_oppenheimer_dynamics import h2plus_aug_cc_pv5z_surfaces
 surfaces = h2plus_aug_cc_pv5z_surfaces()
 ```
 
+New H2+ curves can be computed with the optional PySCF backend and converted
+directly to this representation; see
+[H2+ electronic properties](h2plus_electronic_properties.md).
+
 ## FEM-DVR radial grid
 
 The radial coordinate uses the FEM-DVR implementation in `grid-lib`, with

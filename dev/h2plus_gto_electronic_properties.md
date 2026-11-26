@@ -7,10 +7,8 @@ no implementation is included in this document.
 
 Implementation status:
 
-- Phases 1–4: implemented on the dedicated electronic-properties feature
+- Phases 1–5: implemented on the dedicated electronic-properties feature
   branch.
-- Phase 5: partially started; the full documentation and rotor-conversion
-  example remain.
 
 The first electronic-structure backend will:
 

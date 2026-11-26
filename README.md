@@ -9,6 +9,7 @@ numerical components:
 
 - [Documentation overview](docs/index.md)
 - [Installation](docs/installation.md)
+- [H2+ electronic properties](docs/h2plus_electronic_properties.md)
 - [Rigid-rotor model](docs/rigid_rotor.md)
 - [Vibrational-rotor model](docs/vibrational_rotor.md)
 - [Electric-field interaction](docs/electric_fields.md)
